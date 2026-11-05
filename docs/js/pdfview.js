@@ -94,20 +94,28 @@ function extractWords(content, viewport) {
   const words = [];
   let text = '';
   const styles = content.styles || {};
+  let prev = null; // { top, bottom, h } предыдущего текстового куска
   for (const item of content.items) {
     if (typeof item.str !== 'string') continue;
     const str = item.str;
     const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
     const angle = Math.atan2(tx[1], tx[0]);
+    const style = styles[item.fontName] || {};
+    const fontH = Math.hypot(tx[2], tx[3]);
+    const ascent = style.ascent ? style.ascent : style.descent ? 1 + style.descent : 0.8;
+    const top = tx[5] - fontH * ascent;
+    const visible = str.trim() && Math.abs(angle) <= 0.02 && fontH >= 3;
+    if (visible && prev) {
+      // большой отступ или смена размера шрифта = новый абзац/заголовок, предложение там заканчивается
+      const gap = top - prev.bottom;
+      const ratio = fontH / prev.h;
+      if (gap > Math.max(fontH, prev.h) * 0.7 || ratio > 1.25 || ratio < 0.8) text += '\u0001';
+    }
     const start = text.length;
     text += str;
     if (item.hasEOL) text += '\n';
-    if (!str.trim() || Math.abs(angle) > 0.02) continue;
-    const style = styles[item.fontName] || {};
-    const fontH = Math.hypot(tx[2], tx[3]);
-    if (fontH < 3) continue;
-    const ascent = style.ascent ? style.ascent : style.descent ? 1 + style.descent : 0.8;
-    const top = tx[5] - fontH * ascent;
+    if (!visible) continue;
+    prev = { top, bottom: top + fontH, h: fontH };
     const left = tx[4];
     const widthPx = item.width * viewport.scale;
     measureCtx.font = `${fontH}px ${style.fontFamily || 'sans-serif'}`;
@@ -143,13 +151,29 @@ function extractWords(content, viewport) {
   return { words, text };
 }
 
-// Предложение вокруг слова (для перевода в контексте)
-export function sentenceAt(text, at) {
+// Предложение вокруг слова (для перевода в контексте).
+// Возвращает { text, wordStart, rel } — где в предложении стоит слово.
+export function sentenceAt(text, at, wordLen = 1) {
   const flat = text.replace(/-\n(?=[a-z])/g, '\u0000\u0000').replace(/\n/g, ' ');
-  const isEnd = (i) => /[.!?…]/.test(flat[i]) && (i + 1 >= flat.length || /[\s"'”’)]/.test(flat[i + 1]));
+  const isEnd = (i) => flat[i] === '\u0001' || (/[.!?…]/.test(flat[i]) && (i + 1 >= flat.length || /[\s"'”’)\u0001]/.test(flat[i + 1])));
   let s = at;
-  while (s > 0 && !isEnd(s - 1)) s--;
+  while (s > 0 && !isEnd(s - 1) && at - s < 700) s--;
   let e = at;
-  while (e < flat.length && !isEnd(e)) e++;
-  return flat.slice(s, Math.min(flat.length, e + 1)).replace(/\u0000/g, '').replace(/\s+/g, ' ').trim().slice(0, 600);
+  while (e < flat.length && !isEnd(e) && e - at < 700) e++;
+  const raw = flat.slice(s, Math.min(flat.length, e + 1));
+  // чистим строку и пересчитываем позицию слова
+  let out = '';
+  let wordStart = -1;
+  let space = false;
+  for (let i = 0; i < raw.length; i++) {
+    if (i === at - s) { if (space && out) out += ' '; space = false; wordStart = out.length; }
+    const ch = raw[i];
+    if (ch === '\u0000') continue;
+    if (/\s|\u0001/.test(ch)) { space = true; continue; }
+    if (space && out) out += ' ';
+    space = false;
+    out += ch;
+  }
+  if (wordStart < 0) wordStart = 0;
+  return { text: out, wordStart, wordLen, rel: out.length ? (wordStart + wordLen / 2) / out.length : 0.5 };
 }

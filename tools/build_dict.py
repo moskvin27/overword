@@ -90,7 +90,7 @@ def parse_body(body):
     def flush():
         nonlocal current
         if current:
-            groups.append([current_pos, current[:5]])
+            groups.append([current_pos, current[:14]])
         current = []
 
     for ch in chunks:
@@ -112,9 +112,9 @@ def parse_body(body):
             continue
         means = clean_meanings(ch)
         if means:
-            current.append(", ".join(means[:3]))
+            current.append(", ".join(means[:4]))
     flush()
-    groups = [g for g in groups if g[1]][:4]
+    groups = [g for g in groups if g[1]][:5]
     return ipa, groups
 
 

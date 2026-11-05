@@ -50,7 +50,7 @@
     </button>
     <button class="chip-btn" id="dictBtn">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
-      <span>Словарь</span>
+      <span>Панель</span>
       <span class="count" id="dictCount">0</span>
     </button>
     <button class="sync-pill" id="syncPill" title="Синхронизация через GitHub">
@@ -96,51 +96,28 @@
       </div>
     </section>
 
-    <div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="popWord" hidden>
-      <div class="pop-head">
-        <div class="pop-title">
-          <span class="pop-word" id="popWord"></span>
-          <span class="pop-ipa" id="popIpa"></span>
-        </div>
-        <div class="pop-actions">
-          <button class="round accent" id="popSpeak" aria-label="Прослушать">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
-          </button>
-          <button class="round" id="popClose" aria-label="Закрыть">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="pop-form" id="popForm"></div>
-      <div class="pop-label-row" id="popLabelRow">
-        <span class="mini-cap">Надпись над словом</span>
-        <input id="popLabelInput" type="text" maxlength="60" aria-label="Надпись над словом">
-      </div>
-      <div class="pop-meanings" id="popMeanings"></div>
-      <div class="pop-sep"></div>
-      <div class="mini-cap">В контексте · переводчик Chrome</div>
-      <div class="pop-sentence" id="popSentence"></div>
-      <div class="pop-buttons" id="popButtons"></div>
-    </div>
   </main>
 
-  <aside class="drawer" id="drawer" hidden>
-    <div class="drawer-head">
-      <h2>Мой словарь</h2>
-      <button class="round" id="drawerClose" aria-label="Закрыть словарь">
+  <aside class="side" id="side" hidden>
+    <div class="side-tabs" role="tablist">
+      <button role="tab" class="tab active" data-tab="page" aria-selected="true">Переводы <span class="tab-n" id="pageCount">0</span></button>
+      <button role="tab" class="tab" data-tab="all" aria-selected="false">Весь словарь <span class="tab-n" id="allCount">0</span></button>
+      <button class="round side-close" id="sideClose" aria-label="Скрыть панель">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <label class="search">
-      <span class="sr">Поиск по словарю</span>
-      <input type="search" id="dictSearch" placeholder="Найти слово…">
-    </label>
-    <div class="drawer-tabs" role="tablist">
-      <button role="tab" class="tab active" data-filter="page" aria-selected="true">На странице</button>
-      <button role="tab" class="tab" data-filter="all" aria-selected="false">Все</button>
+    <div class="panel" id="panelPage">
+      <div class="cards" id="cards"></div>
+      <p class="side-empty" id="pageEmpty">Кликни незнакомое слово в книге — перевод появится здесь.</p>
     </div>
-    <ul class="dict-list" id="dictList"></ul>
-    <p class="drawer-empty" id="dictEmpty">Пока пусто. Кликни незнакомое слово в книге.</p>
+    <div class="panel" id="panelAll" hidden>
+      <label class="search">
+        <span class="sr">Поиск по словарю</span>
+        <input type="search" id="dictSearch" placeholder="Найти слово или перевод…">
+      </label>
+      <ul class="dict-list" id="dictList"></ul>
+      <p class="side-empty" id="dictEmpty">Пока пусто.</p>
+    </div>
   </aside>
 </div>
 
@@ -154,7 +131,7 @@
     </div>
 
     <section class="set-block">
-      <h3>Озвучка</h3>
+      <h3>Озвучка и подсказки</h3>
       <label class="field">
         <span>Голос</span>
         <select id="voiceSelect"></select>
@@ -164,6 +141,7 @@
         <input type="range" id="rateInput" min="0.5" max="1.3" step="0.1" value="0.9">
       </label>
       <label class="check"><input type="checkbox" id="autoSpeak" checked> Произносить слово при первом клике</label>
+      <label class="check"><input type="checkbox" id="hoverAll" checked> Подсказка перевода при наведении на любое слово (не только из словаря)</label>
       <button type="button" class="ghost-btn" id="testVoice">Проверить голос</button>
     </section>
 

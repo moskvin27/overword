@@ -1,6 +1,6 @@
 // Офлайн-режим: сначала сеть, если её нет — берём из кэша.
-const CACHE = 'overword-v1';
-const CORE = ['./', 'index.html', 'css/app.css', 'js/main.js', 'js/store.js', 'js/dict.js', 'js/pdfview.js',
+const CACHE = 'overword-v2';
+const CORE = ['./', 'index.html', 'css/app.css', 'js/main.js', 'js/store.js', 'js/dict.js', 'js/pdfview.js', 'js/context.js',
   'js/speech.js', 'js/translate.js', 'js/sync.js', 'vendor/pdfjs/pdf.min.js', 'vendor/pdfjs/pdf.worker.min.js',
   'data/dict.json', 'icon.svg'];
 
