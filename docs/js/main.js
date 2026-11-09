@@ -41,7 +41,7 @@ const el = {
 
 // ---------- настройки этого компа (не синхронизируются) ----------
 const prefs = Object.assign(
-  { voice: '', rate: 0.9, autoSpeak: true, hoverAll: true, zoom: 1, side: true, tab: 'page' },
+  { voice: '', rate: 0.9, autoSpeak: true, hoverAll: true, zoom: 1, side: true, tab: 'page', legend: true },
   safeJson(localStorage.getItem('ow.prefs')),
 );
 function savePrefs() { localStorage.setItem('ow.prefs', JSON.stringify(prefs)); }
@@ -77,6 +77,10 @@ function live(lemma) {
   const r = state.words[lemma];
   return r && !r.del ? r : null;
 }
+function shown(lemma) {
+  const r = live(lemma);
+  return r && !r.hidden ? r : null;
+}
 function liveWords() {
   return Object.entries(state.words).filter(([, r]) => !r.del);
 }
@@ -104,6 +108,8 @@ const ICON = {
   speak: svg('<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>'),
   close: svg('<path d="M18 6L6 18M6 6l12 12"/>'),
   trash: svg('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'),
+  eye: svg('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  eyeOff: svg('<path d="M3 3l18 18M10.6 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.5 4.5-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'),
 };
 
 // ---------- запуск ----------
@@ -314,20 +320,75 @@ function buildWordButtons() {
   el.words.appendChild(frag);
 }
 
-// Подсветка слов из словаря на видимой странице
+// Подсветка слов из словаря на видимой странице + надпись над первым вхождением
 function decorate() {
   if (!current) return;
   const btns = el.words.children;
+  const words = current.entry.words;
+  const firstSeen = new Set();
+  const pinned = [];
   for (let i = 0; i < btns.length; i++) {
     const lemma = current.lemmas[i];
-    const rec = live(lemma);
+    const rec = shown(lemma);
     const b = btns[i];
-    const active = i === openIdx || (openIdx >= 0 && current.entry.words[openIdx].join && sameJoin(i, openIdx));
+    const active = i === openIdx || (openIdx >= 0 && words[openIdx].join && sameJoin(i, openIdx));
     if (!rec) { b.className = 'w' + (active ? ' active' : ''); continue; }
     const col = colorOf(rec);
     b.className = 'w saved' + (active ? ' active' : '');
     b.style.setProperty('--c', col.c);
     b.style.setProperty('--c-line', col.line);
+    if (!firstSeen.has(lemma) && !words[i].joinPart) {
+      firstSeen.add(lemma);
+      pinned.push({ i, lemma, col });
+    }
+  }
+  current.pinned = new Set(pinned.map((p) => p.i));
+  placeLabels(pinned);
+}
+
+function placeLabels(list) {
+  el.labels.querySelectorAll('.lbl').forEach((x) => x.remove());
+  if (!list.length) return;
+  const words = current.entry.words;
+  const pageW = current.entry.cssW;
+  const size = Math.round(Math.max(10.5, Math.min(13, 11.5 * (pageW / 760))));
+  // меряем реальную ширину надписей
+  const items = list.map(({ i, lemma, col }) => {
+    const w = words[i];
+    const text = labelOf(lemma) || '…';
+    const d = document.createElement('div');
+    d.className = 'lbl';
+    d.textContent = text;
+    d.title = text;
+    d.style.cssText = `left:0;top:0;visibility:hidden;--lbl-size:${size}px;--c:${col.c};--c-ink:${col.ink}`;
+    el.labels.appendChild(d);
+    return { i, w, d, cx: w.x + w.w / 2 };
+  });
+  for (const it of items) it.natural = it.d.offsetWidth + 1;
+  items.sort((a, b) => a.w.y - b.w.y || a.w.x - b.w.x);
+  // по строкам, без наложений
+  const lines = [];
+  for (const it of items) {
+    const line = lines.find((l) => Math.abs(l.y - it.w.y) < it.w.h * 0.5);
+    if (line) line.items.push(it); else lines.push({ y: it.w.y, items: [it] });
+  }
+  for (const line of lines) {
+    line.items.sort((a, b) => a.cx - b.cx);
+    let prevRight = -Infinity;
+    line.items.forEach((it, k) => {
+      const next = line.items[k + 1];
+      let left = Math.max(it.cx - it.natural / 2, prevRight + 3, 0);
+      let limit = pageW;
+      if (next) limit = Math.max(next.cx - Math.min(next.natural, next.w.w + 16) / 2, left + 26);
+      let width = Math.min(it.natural, limit - left - 3);
+      if (width < 26) width = 26;
+      if (left + width > pageW) left = Math.max(0, pageW - width);
+      prevRight = left + width;
+      it.d.style.left = left.toFixed(1) + 'px';
+      it.d.style.top = (it.w.y + 1).toFixed(1) + 'px';
+      it.d.style.maxWidth = width.toFixed(1) + 'px';
+      it.d.style.visibility = '';
+    });
   }
 }
 function sameJoin(i, j) {
@@ -343,10 +404,11 @@ let tipIdx = -1;
 function showTip(i) {
   if (!current) return;
   const lemma = current.lemmas[i];
-  const rec = live(lemma);
+  const rec = shown(lemma);
   clearTimeout(tipTimer);
+  if (rec && current.pinned && current.pinned.has(i)) { hideTip(); return; } // надпись и так видна
   if (!rec && !prefs.hoverAll) return;
-  const text = rec ? labelOf(lemma) : shortRu(lemma);
+  const text = rec || live(lemma) ? labelOf(lemma) : shortRu(lemma);
   if (!text) { hideTip(); return; }
   const delay = rec ? 0 : 280;
   tipIdx = i;
@@ -377,23 +439,73 @@ function hideTip() {
 }
 
 // ---------- клик по слову ----------
-function onWordClick(i) {
+// новое слово: в словарь + надпись; выделенное: звук; двойной клик по выделенному: убрать подсветку
+let clickTimer = null;
+let justAdded = { lemma: null, t: 0 };
+
+function onWordClick(i, detail = 1) {
   if (!current || !book) return;
   hideTip();
   const w = current.entry.words[i];
   const lemma = current.lemmas[i];
-  let rec = live(lemma);
-  if (!rec && dictEntry(lemma)) {
+  const say = () => speech.speak(w.join || w.word, voiceOpts());
+  const rec = live(lemma);
+
+  if (detail >= 2) {
+    clearTimeout(clickTimer);
+    // двойной клик по только что добавленному слову не считаем — это привычка «дабл-кликать»
+    if (justAdded.lemma === lemma && Date.now() - justAdded.t < 700) return;
+    if (shown(lemma)) hideWord(lemma);
+    return;
+  }
+
+  if (rec && !rec.hidden) {
+    // уже выделено: ждём чуть-чуть, вдруг это двойной клик
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { say(); openCard(lemma, i); }, 240);
+    return;
+  }
+  if (rec && rec.hidden) {
+    state.words[lemma] = { ...rec, hidden: false, u: Date.now() };
+    changed();
+    justAdded = { lemma, t: Date.now() };
+    if (prefs.autoSpeak) say();
+    openCard(lemma, i);
+    return;
+  }
+  if (dictEntry(lemma)) {
     const now = Date.now();
-    rec = state.words[lemma] = {
-      ru: shortRu(lemma), auto: true, color: state.nextColor % COLORS.length, u: now, at: now,
-    };
+    state.words[lemma] = { ru: shortRu(lemma), auto: true, color: state.nextColor % COLORS.length, u: now, at: now };
     state.nextColor = (state.nextColor || 0) + 1;
     changed();
     renderCounts();
-    if (prefs.autoSpeak) speech.speak(w.join || w.word, voiceOpts());
+    justAdded = { lemma, t: now };
+    if (prefs.autoSpeak) say();
+    tempCard = null;
+  } else {
+    tempCard = { lemma, idx: i };
   }
-  if (rec) { tempCard = null; openCard(lemma, i); } else { tempCard = { lemma, idx: i }; openCard(lemma, i); }
+  openCard(lemma, i);
+}
+
+function hideWord(lemma) {
+  const rec = live(lemma);
+  if (!rec) return;
+  state.words[lemma] = { ...rec, hidden: true, u: Date.now() };
+  changed();
+  if (openLemma === lemma) { openLemma = null; openIdx = -1; }
+  decorate();
+  renderCards();
+  toast(`«${lemma}» больше не подсвечивается — в словаре осталось`);
+}
+
+function showWord(lemma) {
+  const rec = live(lemma);
+  if (!rec) return;
+  state.words[lemma] = { ...rec, hidden: false, u: Date.now() };
+  changed();
+  decorate();
+  renderCards();
 }
 
 function openCard(lemma, idx) {
@@ -431,7 +543,7 @@ function renderCounts() {
 function renderCards() {
   renderCounts();
   const counts = pageCounts();
-  let list = current ? liveWords().filter(([k]) => counts.has(k)) : [];
+  let list = current ? liveWords().filter(([k, r]) => counts.has(k) && !r.hidden) : [];
   list.sort((a, b) => (touched.get(b[0]) || 0) - (touched.get(a[0]) || 0) || (b[1].at || b[1].u || 0) - (a[1].at || a[1].u || 0));
   el.pageCount.textContent = list.length;
   el.cards.textContent = '';
@@ -557,6 +669,7 @@ function buildCardBody(lemma, rec) {
       if (!r) return;
       state.words[lemma] = { ...r, ru: inp.value.trim(), auto: false, u: Date.now() };
       changed();
+      decorate();
       body.querySelectorAll('.chip.on').forEach((c) => c.classList.remove('on'));
     });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { inp.blur(); renderCards(); } });
@@ -648,6 +761,7 @@ function setMy(lemma, text) {
   if (!r) return;
   state.words[lemma] = { ...r, ru: text, auto: false, u: Date.now() };
   changed();
+  decorate();
   renderCards();
 }
 
@@ -681,6 +795,7 @@ function buildContext(lemma, w) {
     if (match && r && r.auto !== false && r.ru !== match.label) {
       state.words[lemma] = { ...r, ru: match.label, auto: true, u: Date.now() };
       changed();
+      decorate();
       const inp = document.getElementById('myInput');
       if (!(inp && document.activeElement === inp)) { renderCards(); return; }
     }
@@ -789,13 +904,21 @@ function renderAll() {
     sp.innerHTML = ICON.speak;
     sp.setAttribute('aria-label', 'Прослушать ' + lemma);
     sp.addEventListener('click', () => speech.speak(lemma, voiceOpts()));
+    const eye = document.createElement('button');
+    eye.type = 'button';
+    eye.className = 'round';
+    eye.innerHTML = rec.hidden ? ICON.eyeOff : ICON.eye;
+    eye.title = rec.hidden ? 'Не подсвечивается в тексте — включить' : 'Подсвечивается в тексте — выключить';
+    eye.setAttribute('aria-label', eye.title);
+    eye.addEventListener('click', () => { if (rec.hidden) showWord(lemma); else hideWord(lemma); });
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'round';
     del.innerHTML = ICON.trash;
     del.setAttribute('aria-label', 'Удалить ' + lemma);
     del.addEventListener('click', () => removeWord(lemma));
-    row.append(sp, del);
+    if (rec.hidden) card.classList.add('dim');
+    row.append(sp, eye, del);
     card.appendChild(row);
     li.appendChild(card);
     frag.appendChild(li);
@@ -892,11 +1015,14 @@ function bindUi() {
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
   setTab(prefs.tab === 'all' ? 'all' : 'page');
   el.dictSearch.addEventListener('input', renderAll);
+  const legend = document.getElementById('legend');
+  legend.open = prefs.legend !== false;
+  legend.addEventListener('toggle', () => { prefs.legend = legend.open; savePrefs(); });
 
   // клики по странице: слово — открыть перевод справа, пустое место — свернуть карточку
   el.words.addEventListener('click', (e) => {
     const b = e.target.closest('.w');
-    if (b) { e.stopPropagation(); onWordClick(Number(b.dataset.i)); }
+    if (b) { e.stopPropagation(); onWordClick(Number(b.dataset.i), e.detail || 1); }
   });
   el.stage.addEventListener('click', (e) => {
     if (e.target.closest('.w') || !openLemma) return;

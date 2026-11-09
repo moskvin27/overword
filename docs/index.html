@@ -107,6 +107,38 @@
       </button>
     </div>
     <div class="panel" id="panelPage">
+      <details class="legend" id="legend" open>
+        <summary>
+          <span>Как это работает</span>
+          <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <ul class="lg-list">
+          <li>
+            <span class="lg-demo"><span class="lg-pin">прилив</span><span class="lg-w c1">tide</span></span>
+            <span class="lg-text"><b>Клик по новому слову</b> — перевод встаёт над ним (по разу на каждой странице) и слово уходит в словарь</span>
+          </li>
+          <li>
+            <span class="lg-demo"><span class="lg-w c1">tide</span><svg class="lg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span>
+            <span class="lg-text"><b>Клик по выделенному</b> — произношение</span>
+          </li>
+          <li>
+            <span class="lg-demo"><span class="lg-w c2 lg-x2">trend</span><span class="lg-badge">×2</span></span>
+            <span class="lg-text"><b>Двойной клик</b> — убрать подсветку со всех страниц. Слово остаётся в «Весь словарь», вернуть — кликнуть снова или <svg class="lg-inline" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> в словаре</span>
+          </li>
+          <li>
+            <span class="lg-demo"><span class="lg-tip">рынок</span><span class="lg-w">market</span><svg class="lg-cursor" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 8-6 2-2 6z"/></svg></span>
+            <span class="lg-text"><b>Навёл мышь</b> — подсказка перевода над любым словом</span>
+          </li>
+          <li>
+            <span class="lg-demo lg-ru">в <mark>тренде</mark></span>
+            <span class="lg-text"><b>Перевод предложения</b> справа: подсвечено нужное слово, клик по любому другому — станет твоим переводом</span>
+          </li>
+          <li class="lg-keys">
+            <span class="lg-demo"><kbd>←</kbd><kbd>→</kbd><kbd>Esc</kbd></span>
+            <span class="lg-text">листать страницы · свернуть карточку</span>
+          </li>
+        </ul>
+      </details>
       <div class="cards" id="cards"></div>
       <p class="side-empty" id="pageEmpty">Кликни незнакомое слово в книге — перевод появится здесь.</p>
     </div>

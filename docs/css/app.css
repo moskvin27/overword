@@ -153,6 +153,18 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .w:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .page-loading, .no-text { color: var(--muted); font-size: 13px; }
 
+/* ---------- надпись над словом (первое вхождение на странице) ---------- */
+.lbl {
+  position: absolute; transform: translateY(-100%); pointer-events: none;
+  font: 700 var(--lbl-size, 12px)/1.15 var(--label-font); letter-spacing: .01em;
+  color: rgb(var(--c-ink)); background: rgba(255, 255, 255, .92); border-radius: 4px;
+  padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 0 0 1px rgba(var(--c), .45);
+}
+.words { user-select: none; -webkit-user-select: none; }
+.card.dim { opacity: .55; }
+.card.dim:hover { opacity: .85; }
+
 /* ---------- подсказка при наведении ---------- */
 .tip {
   position: absolute; transform: translateY(-100%); z-index: 6; pointer-events: none;
@@ -226,6 +238,47 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .card-actions .danger { background: transparent; border-color: #4a2a26; color: var(--bad); }
 
 .dict-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- легенда ---------- */
+.legend { border-radius: 14px; background: linear-gradient(180deg, #1c2029, #191c24); border: 1px solid var(--line); flex-shrink: 0; }
+.legend summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px; font-weight: 800; font-size: 13px; color: var(--accent-2); letter-spacing: .01em;
+}
+.legend summary::-webkit-details-marker { display: none; }
+.legend .chev { width: 16px; height: 16px; color: var(--muted); transition: transform .2s; }
+.legend[open] .chev { transform: rotate(180deg); }
+.lg-list { list-style: none; margin: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.lg-list li { display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: center; }
+.lg-demo {
+  position: relative; height: 46px; border-radius: 9px; background: #fbfaf7; color: #222;
+  display: flex; align-items: flex-end; justify-content: center; gap: 4px; padding-bottom: 8px;
+  font: 400 15px/1 Georgia, "Times New Roman", serif;
+}
+.lg-w { padding: 0 2px; border-radius: 3px; }
+.lg-w.c1 { background: rgba(56,178,172,.24); box-shadow: inset 0 -2px 0 rgb(31,122,117); }
+.lg-w.c2 { background: rgba(146,112,214,.24); box-shadow: inset 0 -2px 0 rgb(106,75,176); }
+.lg-x2 { text-decoration: line-through; text-decoration-color: rgba(106,75,176,.7); }
+.lg-pin {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  font: 700 10.5px/1.15 var(--label-font); color: rgb(21,89,85); background: #fff; border-radius: 4px; padding: 0 4px;
+  box-shadow: 0 0 0 1px rgba(56,178,172,.45);
+}
+.lg-tip {
+  position: absolute; top: 4px; left: 50%; transform: translateX(-60%);
+  font: 600 10.5px/1.2 var(--label-font); color: #5c574d; background: #fff; border-radius: 5px; padding: 2px 6px;
+  box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 0 0 1px #e2ddd2;
+}
+.lg-ico { width: 15px; height: 15px; color: #b5701a; margin-bottom: 1px; }
+.lg-cursor { position: absolute; right: 16px; bottom: 3px; width: 13px; height: 13px; fill: #222; stroke: #fff; stroke-width: 1.5; }
+.lg-badge { font: 800 10px/1 "Manrope", sans-serif; color: #fff; background: #6a4bb0; border-radius: 5px; padding: 3px 5px; margin-bottom: 2px; }
+.lg-ru { font: 600 11.5px/1.2 "Manrope", sans-serif; color: #e4ded2; background: #232834; align-items: center; padding: 0 6px; text-align: center; }
+.lg-ru mark { background: rgba(146,112,214,.35); color: #fff; border-radius: 3px; padding: 0 2px; box-shadow: inset 0 -2px 0 rgb(106,75,176); }
+.lg-keys .lg-demo { background: #232834; align-items: center; padding: 0; gap: 5px; }
+kbd { font: 700 11px/1 "Manrope", sans-serif; color: var(--text); background: #2e3442; border: 1px solid #3c4352; border-bottom-width: 2px; border-radius: 5px; padding: 4px 6px; }
+.lg-text { font-size: 12.5px; line-height: 1.4; color: #c9c3b6; }
+.lg-text b { color: #fff; font-weight: 700; }
+.lg-inline { width: 13px; height: 13px; vertical-align: -2px; color: var(--accent-2); }
 
 /* ---------- настройки ---------- */
 .modal {
